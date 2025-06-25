@@ -39,5 +39,6 @@ model Reward {
   title       String
   description String
   cost        Int
+  purchased   Boolean   @default(false)
   imageUrl    String?  // optional picture URL
 }

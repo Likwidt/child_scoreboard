@@ -3,5 +3,6 @@ export interface Reward {
   title: string;
   description: string;
   cost: number;
+  purchased: boolean;
   imageUrl?: string;
 }
