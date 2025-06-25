@@ -1,19 +1,76 @@
 'use client';
-
-import React, { useState, useMemo } from 'react';
-import { initialTasks, Task } from './lib/tasks';
+import React, { useState, useEffect, useMemo } from 'react';
+import type { Task } from '../lib/tasks';
 
 const Dashboard: React.FC = () => {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
-  const [newName, setNewName] = useState<string>('');
-  const [newPts, setNewPts] = useState<number>(0);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
+  const [currentTask, setCurrentTask] = useState<Task | null>(null);
+  const [formName, setFormName] = useState('');
+  const [formPts, setFormPts] = useState(0);
 
-  const changeCount = (id: number, delta: number) => {
-    setTasks(current =>
-      current.map(task =>
-        task.id === id ? { ...task, count: task.count + delta } : task
-      )
-    );
+  const fetchTasks = async () => {
+    const res = await fetch('/api/tasks');
+    const data: Task[] = await res.json();
+    setTasks(data);
+  };
+
+  useEffect(() => { fetchTasks(); }, []);
+
+  const openAddModal = () => {
+    setModalMode('add');
+    setCurrentTask(null);
+    setFormName('');
+    setFormPts(0);
+    setModalOpen(true);
+  };
+
+  const openEditModal = (task: Task) => {
+    setModalMode('edit');
+    setCurrentTask(task);
+    setFormName(task.name);
+    setFormPts(task.pts);
+    setModalOpen(true);
+  };
+
+  const closeModal = () => setModalOpen(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formName.trim()) return;
+
+    if (modalMode === 'add') {
+      await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: formName.trim(), pts: formPts }),
+      });
+    } else if (modalMode === 'edit' && currentTask) {
+      await fetch(`/api/tasks/${currentTask.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: formName.trim(), pts: formPts }),
+      });
+    }
+
+    closeModal();
+    fetchTasks();
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Delete this task?')) return;
+    await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+    fetchTasks();
+  };
+
+  const changeCount = async (id: number, delta: number) => {
+    await fetch(`/api/tasks/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ delta }),
+    });
+    fetchTasks();
   };
 
   const total = useMemo(
@@ -21,51 +78,66 @@ const Dashboard: React.FC = () => {
     [tasks]
   );
 
-  const addTask = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newName.trim()) return;
-    const maxId = tasks.reduce((max, t) => (t.id > max ? t.id : max), 0);
-    const newTask: Task = { id: maxId + 1, name: newName.trim(), pts: newPts, count: 0 };
-    setTasks([...tasks, newTask]);
-    setNewName('');
-    setNewPts(0);
-  };
-
   return (
     <div className="max-w-4xl mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Chore & Behavior Points</h1>
+      <button
+        onClick={openAddModal}
+        className="mb-4 px-4 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+      >
+        Add Task
+      </button>
 
-      {/* Add Task Form */}
-      <form onSubmit={addTask} className="mb-4 flex items-center space-x-2">
-        <input
-          type="text"
-          value={newName}
-          onChange={e => setNewName(e.target.value)}
-          placeholder="Task description"
-          className="flex-1 border px-2 py-1 rounded"
-        />
-        <input
-          type="number"
-          value={newPts}
-          onChange={e => setNewPts(parseInt(e.target.value, 10) || 0)}
-          placeholder="Points"
-          className="w-24 border px-2 py-1 rounded"
-        />
-        <button
-          type="submit"
-          className="px-4 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          Add Task
-        </button>
-      </form>
+      {modalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
+            <h2 className="text-xl font-semibold mb-4">
+              {modalMode === 'add' ? 'Add Task' : 'Edit Task'}
+            </h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Description</label>
+                <input
+                  type="text"
+                  value={formName}
+                  onChange={e => setFormName(e.target.value)}
+                  className="w-full border px-2 py-1 rounded"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Points</label>
+                <input
+                  type="number"
+                  value={formPts}
+                  onChange={e => setFormPts(parseInt(e.target.value, 10) || 0)}
+                  className="w-full border px-2 py-1 rounded"
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="px-3 py-1 border rounded"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                >
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <table className="min-w-full border-collapse">
         <thead>
           <tr>
-            {['Task', 'Pts', 'Done', 'Actions', 'Subtotal'].map(header => (
-              <th key={header} className="border px-2 py-1 bg-gray-100">
-                {header}
-              </th>
+            {['Task', 'Pts', 'Done', 'Actions', 'Subtotal'].map(h => (
+              <th key={h} className="border px-2 py-1 bg-gray-100">{h}</th>
             ))}
           </tr>
         </thead>
@@ -90,6 +162,18 @@ const Dashboard: React.FC = () => {
                 >
                   –1
                 </button>
+                <button
+                  onClick={() => openEditModal({ id, name, pts, count })}
+                  className="px-2 py-0.5 border rounded hover:bg-yellow-100"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(id)}
+                  className="px-2 py-0.5 border rounded hover:bg-red-200"
+                >
+                  Delete
+                </button>
               </td>
               <td className="border px-2 py-1 text-center">
                 {(pts * count) > 0 ? `+${pts * count}` : pts * count}
@@ -99,9 +183,7 @@ const Dashboard: React.FC = () => {
         </tbody>
         <tfoot>
           <tr>
-            <td colSpan={4} className="border px-2 py-2 font-semibold text-right">
-              Total:
-            </td>
+            <td colSpan={4} className="border px-2 py-2 font-semibold text-right">Total:</td>
             <td className="border px-2 py-2 font-semibold text-center">
               {total > 0 ? `+${total}` : total}
             </td>
