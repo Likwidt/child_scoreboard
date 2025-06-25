@@ -33,3 +33,11 @@ model Account {
   id       Int     @id @default(autoincrement())
   balance  Int     @default(0)
 }
+
+model Reward {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  cost        Int
+  imageUrl    String?  // optional picture URL
+}
