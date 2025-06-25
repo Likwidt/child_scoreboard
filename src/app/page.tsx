@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { initialTasks, Task } from './lib/tasks';
 
 const Dashboard: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [newName, setNewName] = useState<string>('');
+  const [newPts, setNewPts] = useState<number>(0);
 
   const changeCount = (id: number, delta: number) => {
     setTasks(current =>
@@ -19,9 +21,44 @@ const Dashboard: React.FC = () => {
     [tasks]
   );
 
+  const addTask = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newName.trim()) return;
+    const maxId = tasks.reduce((max, t) => (t.id > max ? t.id : max), 0);
+    const newTask: Task = { id: maxId + 1, name: newName.trim(), pts: newPts, count: 0 };
+    setTasks([...tasks, newTask]);
+    setNewName('');
+    setNewPts(0);
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Chore & Behavior Points</h1>
+
+      {/* Add Task Form */}
+      <form onSubmit={addTask} className="mb-4 flex items-center space-x-2">
+        <input
+          type="text"
+          value={newName}
+          onChange={e => setNewName(e.target.value)}
+          placeholder="Task description"
+          className="flex-1 border px-2 py-1 rounded"
+        />
+        <input
+          type="number"
+          value={newPts}
+          onChange={e => setNewPts(parseInt(e.target.value, 10) || 0)}
+          placeholder="Points"
+          className="w-24 border px-2 py-1 rounded"
+        />
+        <button
+          type="submit"
+          className="px-4 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Add Task
+        </button>
+      </form>
+
       <table className="min-w-full border-collapse">
         <thead>
           <tr>
