@@ -2,9 +2,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import type { Task } from '../lib/tasks';
 
-const Dashboard: React.FC = () => {
+export default function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [balance, setBalance] = useState(0);
+  const [loadingIds, setLoadingIds] = useState<number[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [currentTask, setCurrentTask] = useState<Task | null>(null);
@@ -23,6 +24,22 @@ const Dashboard: React.FC = () => {
   };
 
   useEffect(() => { fetchData(); }, []);
+
+  const changeCount = async (id: number, delta: number) => {
+    setLoadingIds(prev => [...prev, id]);
+    try {
+      const res = await fetch(`/api/tasks/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ delta }),
+      });
+      const { tasks: updatedTasks, balance: updatedBalance } = await res.json();
+      setTasks(updatedTasks);
+      setBalance(updatedBalance);
+    } finally {
+      setLoadingIds(prev => prev.filter(x => x !== id));
+    }
+  };
 
   const openAddModal = () => {
     setModalMode('add'); setCurrentTask(null); setFormName(''); setFormPts(0); setModalOpen(true);
@@ -48,18 +65,6 @@ const Dashboard: React.FC = () => {
     if (!confirm('Delete this task?')) return;
     await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
     fetchData();
-  };
-
-  const changeCount = async (id: number, delta: number) => {
-    const res = await fetch(`/api/tasks/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ delta }),
-    });
-    const { balance } = await res.json();
-    setBalance(balance);
-    const data = await res.json();
-    setTasks(data.tasks || data);
   };
 
   const total = useMemo(() => tasks.reduce((sum, t) => sum + t.count * t.pts, 0), [tasks]);
@@ -103,10 +108,10 @@ const Dashboard: React.FC = () => {
               <td className="border px-2 py-1 text-center">{pts>0?`+${pts}`:pts}</td>
               <td className="border px-2 py-1 text-center">{count}</td>
               <td className="border px-2 py-1 text-center space-x-1">
-                <button onClick={()=>changeCount(id,1)} className="px-2 py-0.5 border rounded hover:bg-green-100">+1</button>
-                <button onClick={()=>changeCount(id,-1)} className="px-2 py-0.5 border rounded hover:bg-red-100">–1</button>
-                <button onClick={()=>openEditModal({id,name,pts,count})} className="px-2 py-0.5 border rounded hover:bg-yellow-100">Edit</button>
-                <button onClick={()=>handleDelete(id)} className="px-2 py-0.5 border rounded hover:bg-red-200">Delete</button>
+                <button disabled={loadingIds.includes(id)} onClick={()=>changeCount(id,1)} className="px-2 py-0.5 border rounded hover:bg-green-100">+1</button>
+                <button disabled={loadingIds.includes(id)} onClick={()=>changeCount(id,-1)} className="px-2 py-0.5 border rounded hover:bg-red-100">–1</button>
+                <button disabled={loadingIds.includes(id)} onClick={()=>openEditModal({id,name,pts,count})} className="px-2 py-0.5 border rounded hover:bg-yellow-100">Edit</button>
+                <button disabled={loadingIds.includes(id)} onClick={()=>handleDelete(id)} className="px-2 py-0.5 border rounded hover:bg-red-200">Delete</button>
               </td>
               <td className="border px-2 py-1 text-center">{(pts*count)>0?`+${pts*count}`:pts*count}</td>
             </tr>
@@ -122,5 +127,3 @@ const Dashboard: React.FC = () => {
     </div>
   );
 };
-
-export default Dashboard;
