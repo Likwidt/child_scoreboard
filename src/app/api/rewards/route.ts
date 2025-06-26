@@ -7,8 +7,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const { title, description, cost, imageUrl } = await request.json();
-  if (!title || !description || typeof cost !== 'number') {
+  const { title, description = '', cost, imageUrl } = await request.json();
+  if (!title || typeof cost !== 'number') {
     return NextResponse.json({ message: 'Invalid data' }, { status: 400 });
   }
   await prisma.reward.create({ data: { title, description, cost, imageUrl } });

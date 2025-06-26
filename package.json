@@ -9,7 +9,8 @@
     "start": "next start -p 3000 -H 0.0.0.0",
     "lint": "next lint",
     "seed": "node --loader ts-node/esm prisma/seed.ts",
-    "reset:db": "npx prisma migrate reset"
+    "reset:db": "npx prisma migrate reset",
+    "pm2:serve": "pm2 start cmd --name child-scoreboard -- /c npm start"
   },
   "dependencies": {
     "@prisma/client": "^6.10.1",

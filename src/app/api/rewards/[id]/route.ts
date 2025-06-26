@@ -10,7 +10,7 @@ export async function PATCH(
   const rid = Number(id);
 
   // Parse request body, including purchased flag
-  const { title, description, cost, imageUrl, purchased } = await request.json();
+  const { title, description = '', cost, imageUrl, purchased } = await request.json();
 
   // Update reward with new data
   await prisma.reward.update({
