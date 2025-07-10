@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { Task } from '../lib/tasks';
 import type { Reward } from '../lib/rewards';
+import { PencilIcon, TrashIcon } from '@heroicons/react/24/solid'; // or /outline for lighter version
+
 
 export default function AdminDashboard() {
   // Authentication via secret key
@@ -155,17 +157,25 @@ export default function AdminDashboard() {
       )}
       <div className="border border-black/50 overflow-x-auto bg-white shadow rounded-lg overflow-hidden">
         <table className="min-w-full mb-6">
-          <thead><tr>{['Task','Pts','Done','Actions','Subtotal'].map(h => <th key={h} className="px-2 py-1 bg-gray-100">{h}</th>)}</tr></thead>
+          <thead><tr>{['Task','Pts','Done','Actions'].map(h => <th key={h} className="px-2 py-1 bg-gray-100">{h}</th>)}</tr></thead>
           <tbody className="divide-y divide-gray-200">{tasks.map(({ id, name, pts, count }) => (
             <tr key={id} className="even:bg-gray-50">
               <td className="px-2 py-1">{name}</td>
               <td className="px-2 py-1 text-center">{pts>0?`+${pts}`:pts}</td>
               <td className="px-2 py-1 text-center">{count}</td>
-              <td className="px-2 py-1 text-center space-x-1"><button disabled={loadingTaskIds.includes(id)} onClick={()=>changeCount(id,1)} className="px-2 py-0.5 rounded hover:bg-green-100">+1</button><button disabled={loadingTaskIds.includes(id)} onClick={()=>changeCount(id,-1)} className="px-2 py-0.5 rounded hover:bg-red-100">–1</button><button disabled={loadingTaskIds.includes(id)} onClick={()=>openEditTask({id,name,pts,count})} className="px-2 py-0.5 rounded hover:bg-yellow-100">Edit</button><button disabled={loadingTaskIds.includes(id)} onClick={()=>handleDeleteTask(id)} className="px-2 py-0.5 rounded hover:bg-red-200">Delete</button></td>
-              <td className="px-2 py-1 text-center">{(pts*count)>0?`+${pts*count}`:pts*count}</td>
+              <td className="px-2 py-1 text-center space-x-1 flex flex-row">
+                <button disabled={loadingTaskIds.includes(id)} onClick={()=>changeCount(id,1)} className="bg-green-500 px-2 py-0.5 rounded hover:bg-green-100">+</button>
+                <button disabled={loadingTaskIds.includes(id)} onClick={()=>changeCount(id,-1)} className="bg-red-500 px-2 py-0.5 rounded hover:bg-red-100">–</button>
+                <button disabled={loadingTaskIds.includes(id)} onClick={()=>openEditTask({id,name,pts,count})} className="bg-yellow-500 px-2 py-0.5 rounded hover:bg-yellow-100">
+                  <PencilIcon className="h-5 w-5 text-yellow-600" />
+                </button>
+                <button disabled={loadingTaskIds.includes(id)} onClick={()=>handleDeleteTask(id)} className="bg-red-900 px-2 py-0.5 rounded hover:bg-red-200 text-white">
+                  <TrashIcon className="h-5 w-5 text-red-600" />
+                </button>
+              </td>
             </tr>
           ))}</tbody>
-          <tfoot><tr><td colSpan={4} className="px-2 py-2 font-semibold text-right">Total:</td><td className="px-2 py-2 font-semibold text-center">{totalTasks>0?`+${totalTasks}`:totalTasks}</td></tr></tfoot>
+          <tfoot><tr><td colSpan={3} className="px-2 py-2 font-semibold text-right">Total:</td><td className="px-2 py-2 font-semibold text-center">{totalTasks>0?`+${totalTasks}`:totalTasks}</td></tr></tfoot>
         </table>
       </div>
 
@@ -196,7 +206,14 @@ export default function AdminDashboard() {
               <td className="px-2 py-1">{r.title}</td>
               <td className="px-2 py-1 text-center">{r.cost}</td>
               <td className="px-2 py-1">{r.imageUrl ? <img src={r.imageUrl} alt={r.title} className="h-16 mx-auto"/> : '–'}</td>
-              <td className="px-2 py-1 text-center space-x-2"><button onClick={()=>openEditReward(r)} className="px-2 py-0.5 rounded hover:bg-yellow-100">Edit</button><button onClick={()=>handleDeleteReward(r.id)} className="px-2 py-0.5 rounded hover:bg-red-200">Delete</button></td>
+              <td className="px-2 py-1 text-center space-x-2 flex flex-row">
+                <button onClick={()=>openEditReward(r)} className="bg-yellow-500 px-2 py-0.5 rounded hover:bg-yellow-100">
+                  <PencilIcon className="h-5 w-5 text-yellow-600 hover:text-black" />
+                </button>
+                <button onClick={()=>handleDeleteReward(r.id)} className="bg-red-900 px-2 py-0.5 rounded hover:bg-red-200 text-white">
+                  <TrashIcon className="h-5 w-5 text-red-600 hover:text-white" />
+                </button>
+              </td>
               <td className="px-2 py-1 text-center font-semibold">{r.purchased ? '✅ Purchased' : '–'}</td>
             </tr>
           ))}</tbody>
